@@ -44,9 +44,9 @@ class GameList(Resource):
     def get(self):
         pass
 
-    @ns.response(201, "Game successfully created.")
     @ns.doc("Create a new game")
     @ns.expect(_new_game, validate=True)
+    @ns.marshal_with(_game_status, envelope="data", code=201)
     def post(self):
         pass
 
