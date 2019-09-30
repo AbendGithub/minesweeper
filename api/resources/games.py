@@ -68,11 +68,27 @@ class Game(Resource):
     @ns.doc("Get full data of a game")
     @ns.marshal_with(_game, envelope="data")
     def get(self, game_id):
-        pass
+        return GameDb.query.get(game_id)
 
     @ns.doc("Apply and action on a cell")
     @ns.marshal_with(_game, envelope="data")
     @ns.expect(_action, validate=True)
     def put(self, game_id):
-        pass
+        data = request.json
+        cell = Cell.query.filter_by(game_id=game_id, x=data["x"], y=data["y"]).one()
 
+        if not cell.state == CellState.CLEARED:
+            if data["action"] == "Flag":
+                cell.state = CellState.RED_FLAGGED
+            if data["action"] == "Question":
+                cell.state = CellState.QUESTIONED
+            if data["action"] == "Press":
+                if cell.has_bomb:
+                    cell.state = CellState.BOMBED
+                else:
+                    cell.state = CellState.CLEARED
+
+            db.session.add(cell)
+            db.session.commit()
+
+        return GameDb.query.get(game_id)

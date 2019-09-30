@@ -51,6 +51,7 @@ class Game(db.Model):
     def list_all(cls):
         return cls.query.all()
 
+
 class Cell(db.Model):
     __tablename__ = "cell"
 
