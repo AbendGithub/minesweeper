@@ -1,6 +1,6 @@
 from flask_restplus import Resource, Namespace, fields
 from models.models import GameState, CellState, Game as GameDb, Cell
-from flask import request, abort
+from flask import request
 from common.app import db
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -64,7 +64,6 @@ class GameList(Resource):
 
 @ns.route("/<game_id>")
 @ns.param("game_id", "The game identifier")
-@ns.response(404, "Game not found.")
 class Game(Resource):
     @ns.doc("Get full data of a game")
     @ns.marshal_with(_game, envelope="data")
@@ -76,24 +75,34 @@ class Game(Resource):
     @ns.expect(_action, validate=True)
     def put(self, game_id):
         data = request.json
-
-        try:
-            cell = Cell.query.filter_by(game_id=game_id, x=data["x"], y=data["y"]).one()
-        except NoResultFound:
-            abort(404)
-
-        if not cell.state == CellState.CLEARED:
-            if data["action"] == "Flag":
-                cell.state = CellState.RED_FLAGGED
-            if data["action"] == "Question":
-                cell.state = CellState.QUESTIONED
-            if data["action"] == "Press":
-                if cell.has_bomb:
-                    cell.state = CellState.BOMBED
-                else:
-                    cell.state = CellState.CLEARED
-
-            db.session.add(cell)
-            db.session.commit()
+        _apply_action_on_cell(game_id, data["x"], data["y"], data["action"])
 
         return GameDb.query.get(game_id)
+
+
+@ns.errorhandler(NoResultFound)
+def handle_no_result_exception():
+    """Return a custom not found error message and 404 status code"""
+    return "Resource not found.", 404
+
+
+def _apply_action_on_cell(game_id, x, y, action):
+    cell = Cell.query.filter_by(game_id=game_id, x=x, y=y).one_or_none()
+
+    if cell and cell.state == CellState.UNPRESSED:
+        if action == "Flag":
+            cell.state = CellState.RED_FLAGGED
+        if action == "Question":
+            cell.state = CellState.QUESTIONED
+        if action == "Press":
+            if cell.has_bomb:
+                cell.state = CellState.BOMBED
+            else:
+                cell.state = CellState.CLEARED
+                if not cell.bombs_around:
+                    for i in (x - 1, x, x + 1):
+                        for j in (y - 1, y, y + 1):
+                            _apply_action_on_cell(game_id, i, j, "Press")
+
+        db.session.add(cell)
+        db.session.commit()
