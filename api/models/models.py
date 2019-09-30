@@ -11,6 +11,7 @@ from sqlalchemy import (
     Boolean,
     UniqueConstraint,
     ForeignKey,
+    and_,
 )
 
 
@@ -68,12 +69,14 @@ class Cell(db.Model):
 
     @classmethod
     def generate_grid(cls, game):
+        # creates all rows for the grid
         for x in range(game.rows):
             for y in range(game.columns):
                 db.session.add(Cell(game_id=game.id, x=x, y=y))
 
         db.session.flush()
 
+        # add bombs across the grid
         total_cells = game.rows * game.columns
         for _ in range(game.mines):
             while True:
@@ -86,5 +89,18 @@ class Cell(db.Model):
                     db.session.add(cell)
                     break
 
+        db.session.flush()
 
+        # associate each non-mine cell with number of surrounding mines
+        for x in range(game.rows):
+            for y in range(game.columns):
+                cell = Cell.query.filter_by(game_id=game.id, x=x, y=y, has_bomb=False).one_or_none()
+                if cell:
+                    cell.bombs_around = Cell.count_surrounding_bombs(game, x, y)
+                    db.session.add(cell)
 
+    @classmethod
+    def count_surrounding_bombs(cls, game, x, y):
+        return cls.query.filter(and_(
+            cls.game_id == game.id, (x - 1) <= cls.x, cls.x <= (x + 1), (y - 1) <= cls.y, cls.y <= (y + 1),
+            cls.has_bomb)).count()
