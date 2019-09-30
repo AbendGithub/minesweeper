@@ -1,5 +1,6 @@
 from flask_restplus import Resource, Namespace, fields
 from models.models import GameState, CellState
+from flask import request
 
 ns = Namespace("Game", description="Games related operations")
 _new_game = ns.model("New game", {
@@ -25,6 +26,7 @@ _cell = ns.model("Cell", {
     "row": fields.Integer(required=True, description="Grid row"),
     "column": fields.Integer(required=True, description="Grid column"),
     "state": fields.String(required=True, description="Game status", enum=list(CellState.__members__.keys())),
+    "bombs_around": fields.Integer(description="Number of bombs around a pressed cell")
 })
 
 _game = ns.inherit("Game", _game_status, {
@@ -33,7 +35,7 @@ _game = ns.inherit("Game", _game_status, {
     "bombs": fields.Integer(required=True, description="Number of bombs"),
     "started_at": fields.DateTime(required=True, description="When the game started"),
     "finished_at": fields.DateTime(required=False, description="When the game finished"),
-    "Grid": fields.List(fields.Nested(_cell))
+    "grid": fields.List(fields.Nested(_cell))
 })
 
 
@@ -46,9 +48,9 @@ class GameList(Resource):
 
     @ns.doc("Create a new game")
     @ns.expect(_new_game, validate=True)
-    @ns.marshal_with(_game_status, envelope="data", code=201)
+    @ns.marshal_with(_game, envelope="data", code=201)
     def post(self):
-        pass
+        print(request.get_data())
 
 
 @ns.route("/<game_id>")
