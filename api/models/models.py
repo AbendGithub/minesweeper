@@ -1,6 +1,7 @@
 from common.app import db
 import datetime
 import enum
+import random
 from sqlalchemy.orm import relationship
 from sqlalchemy import (
     Column,
@@ -67,6 +68,23 @@ class Cell(db.Model):
 
     @classmethod
     def generate_grid(cls, game):
-        for x in range(1, game.rows + 1):
-            for y in range(1, game.columns + 1):
+        for x in range(game.rows):
+            for y in range(game.columns):
                 db.session.add(Cell(game_id=game.id, x=x, y=y))
+
+        db.session.flush()
+
+        total_cells = game.rows * game.columns
+        for _ in range(game.mines):
+            while True:
+                cell_number = random.randint(0, total_cells - 1)
+                x = cell_number % game.rows
+                y = int(cell_number / game.rows)
+                cell = Cell.query.filter_by(game_id=game.id, x=x, y=y).one()
+                if not cell.has_bomb:
+                    cell.has_bomb = True
+                    db.session.add(cell)
+                    break
+
+
+

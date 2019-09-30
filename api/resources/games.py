@@ -1,7 +1,8 @@
 from flask_restplus import Resource, Namespace, fields
 from models.models import GameState, CellState, Game as GameDb, Cell
-from flask import request
+from flask import request, abort
 from common.app import db
+from sqlalchemy.orm.exc import NoResultFound
 
 ns = Namespace("Game", description="Games related operations")
 _new_game = ns.model("New game", {
@@ -58,7 +59,7 @@ class GameList(Resource):
         Cell.generate_grid(game)
         db.session.commit()
 
-        return game
+        return game, 201
 
 
 @ns.route("/<game_id>")
@@ -75,7 +76,11 @@ class Game(Resource):
     @ns.expect(_action, validate=True)
     def put(self, game_id):
         data = request.json
-        cell = Cell.query.filter_by(game_id=game_id, x=data["x"], y=data["y"]).one()
+
+        try:
+            cell = Cell.query.filter_by(game_id=game_id, x=data["x"], y=data["y"]).one()
+        except NoResultFound:
+            abort(404)
 
         if not cell.state == CellState.CLEARED:
             if data["action"] == "Flag":
