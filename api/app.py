@@ -7,5 +7,11 @@ api = Api(app, title="MineSweeper API")
 
 api.add_namespace(ns_game, "/games")
 
+
+@app.route("/is_alive")
+def ping():
+    return "Service is up.", 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)
