@@ -76,6 +76,7 @@ class Game(Resource):
     def put(self, game_id):
         data = request.json
         _apply_action_on_cell(game_id, data["x"], data["y"], data["action"])
+        GameDb.verify_end_of_game(game_id)
 
         return GameDb.query.get(game_id)
 
@@ -97,6 +98,9 @@ def _apply_action_on_cell(game_id, x, y, action):
         if action == "Press":
             if cell.has_bomb:
                 cell.state = CellState.BOMBED
+                game = GameDb.query.get(game_id)
+                game.state = GameState.LOST
+                db.session.add(game)
             else:
                 cell.state = CellState.CLEARED
                 if not cell.bombs_around:

@@ -53,6 +53,18 @@ class Game(db.Model):
     def list_all(cls):
         return cls.query.all()
 
+    @classmethod
+    def verify_end_of_game(cls, game_id):
+        game = cls.query.get(game_id)
+        cleared_cells_count = Cell.cleared_cells(game)
+        non_mined_cells_count = game.rows * game.columns - game.mines
+        if cleared_cells_count == non_mined_cells_count:
+            game.state = GameState.WON
+        else:
+            game.state = GameState.IN_PROGRESS
+
+        db.session.add(game)
+
 
 class Cell(db.Model):
     __tablename__ = "cell"
@@ -104,3 +116,7 @@ class Cell(db.Model):
         return cls.query.filter(and_(
             cls.game_id == game.id, (x - 1) <= cls.x, cls.x <= (x + 1), (y - 1) <= cls.y, cls.y <= (y + 1),
             cls.has_bomb)).count()
+
+    @classmethod
+    def cleared_cells(cls, game):
+        return cls.query.filter_by(game_id=game.id, state=CellState.CLEARED).count()
