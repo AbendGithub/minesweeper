@@ -1,5 +1,5 @@
 from common.app import app_factory
-from flask_restplus import Api, reqparse
+from flask_restplus import Api
 from resources.games import ns as ns_game
 
 app = app_factory(__name__)
