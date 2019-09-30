@@ -1,5 +1,12 @@
 # minesweeper
 
+## Notes
+
+Api is documented in swagger. It can be accessed through the base URL: https://vast-taiga-54811.herokuapp.com/
+Summary:
+To create a new game -> POST /games
+Send actions to a game -> PUT /games/<game_id>
+
 ## Decisions
 
 - As the project was meant to be small, flask was the natural choice over django.
@@ -11,4 +18,5 @@
 ## Time Spent
 
 Honestly, it has taken me a bit longer than expected, I had to take care of other things along the day and underestimated a bit the challenge. Looking at the commits, it has been the 5 hours more or less in total.
+ 
  
